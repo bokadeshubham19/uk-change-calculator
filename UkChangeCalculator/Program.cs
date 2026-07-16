@@ -1,6 +1,5 @@
-using UkChangeCalculator.Exceptions;
+using Microsoft.Extensions.DependencyInjection;
 using UkChangeCalculator.Services;
-using UkChangeCalculator.Utilities;
 
 namespace UkChangeCalculator;
 
@@ -8,48 +7,16 @@ class Program
 {
     static void Main()
     {
-        var calculator = new ChangeCalculator(new UkDenominationProvider());
+        // Register the services against their interfaces, then let the container
+        // build everything. ChangeCalculator receives its IDenominationProvider
+        // and ChangeApp receives its IChangeCalculator via constructor injection.
+        var services = new ServiceCollection();
+        services.AddSingleton<IDenominationProvider, UkDenominationProvider>();
+        services.AddSingleton<IChangeCalculator, ChangeCalculator>();
+        services.AddSingleton<ChangeApp>();
 
-        Console.WriteLine("UK Change Calculator");
-        Console.WriteLine("====================");
+        using var provider = services.BuildServiceProvider();
 
-        Console.Write("Enter amount paid:    £");
-        if (!decimal.TryParse(Console.ReadLine(), out decimal amountPaid))
-        {
-            Console.WriteLine("Invalid amount entered.");
-            return;
-        }
-
-        Console.Write("Enter product price:  £");
-        if (!decimal.TryParse(Console.ReadLine(), out decimal productPrice))
-        {
-            Console.WriteLine("Invalid price entered.");
-            return;
-        }
-
-        try
-        {
-            decimal change = InputValidator.GetChange(amountPaid, productPrice);
-
-            if (change == 0)
-            {
-                Console.WriteLine("\nNo change.");
-                return;
-            }
-
-            Console.WriteLine("\nYour change is:");
-            foreach (var item in calculator.CalculateChange(change))
-            {
-                Console.WriteLine(item);
-            }
-        }
-        catch (InsufficientPaymentException ex)
-        {
-            Console.WriteLine("\n" + ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            Console.WriteLine("\n" + ex.Message);
-        }
+        provider.GetRequiredService<ChangeApp>().Run();
     }
 }

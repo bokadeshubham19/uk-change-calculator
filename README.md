@@ -49,7 +49,8 @@ Your change is: (£14.50)
 UkChangeCalculator.sln
 │
 ├── UkChangeCalculator/                  # console app
-│   ├── Program.cs                       # console input/output
+│   ├── Program.cs                       # DI container setup + entry point
+│   ├── ChangeApp.cs                     # console input/output (injected services)
 │   ├── Models/
 │   │   ├── Denomination.cs              # a note/coin (label + value in pence)
 │   │   └── ChangeItem.cs               # one breakdown line (denomination + quantity)
@@ -179,7 +180,7 @@ denomination). Auxiliary working space is **O(1)**.
 
 - **S — Single Responsibility.** Each class has one reason to change:
   `InputValidator` validates, `ChangeCalculator` breaks down an amount,
-  `UkDenominationProvider` supplies data, `Program` handles console I/O.
+  `UkDenominationProvider` supplies data, `ChangeApp` handles console I/O.
 - **O — Open/Closed.** New behaviour is added by extension, not modification.
   A different currency or a **limited till float** is supported by writing a new
   `IDenominationProvider`; the calculator needs no changes. Denominations are
@@ -190,10 +191,12 @@ denomination). Auxiliary working space is **O(1)**.
 - **I — Interface Segregation.** Interfaces are small and focused
   (`IDenominationProvider`, `IChangeCalculator`) — no client depends on methods it
   does not use.
-- **D — Dependency Inversion.** `ChangeCalculator` depends on the
-  `IDenominationProvider` **abstraction**, injected via its constructor. The
-  concrete wiring happens once in `Program.cs` (the composition root), which keeps
-  the business logic decoupled and easily unit-testable.
+- **D — Dependency Inversion.** Nothing `new`s up a service. Concrete types are
+  registered against their interfaces in `Program.cs` using
+  `Microsoft.Extensions.DependencyInjection`, and the container injects them via
+  constructors: `ChangeCalculator` receives an `IDenominationProvider`, and
+  `ChangeApp` receives an `IChangeCalculator`. This keeps the business logic
+  decoupled from concrete implementations and easily unit-testable.
 
 ---
 
